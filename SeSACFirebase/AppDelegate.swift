@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        UIViewController.swizzleMethod() //왜 인스턴스가 아니라 타입으로 써야하는지
+        
         FirebaseApp.configure()
         
         // 알림 시스템에 앱을 등록
@@ -39,15 +41,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         // 메시지 대리자 설정
         Messaging.messaging().delegate = self
-        
-        // 현재 등록된 토큰 가져오기
-        Messaging.messaging().token { token, error in
-          if let error = error {
-            print("Error fetching FCM registration token: \(error)")
-          } else if let token = token {
-            print("FCM registration token: \(token)")
-          }
-        }
 
         return true
     }
@@ -80,12 +73,21 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     //카카오톡: 도이님과 채팅방, 푸시마다 설정, 화면마다 설정 가능
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         
-        //.banner, .list : iOS 14+
-        completionHandler([.badge, .sound, .banner, .list])
+        //Setting 화면에 있다면 포그라운드 푸시 띄우지 마라!
+        guard let viewController = (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.window?.rootViewController?.topViewController else { return }
+        
+        if viewController is SettingViewController {
+            completionHandler([]) // SettingVC 일 때에는 아무것도 받지 않겠다 라는 의미!
+        } else {
+            //.banner, .list : iOS 14+
+            completionHandler([.badge, .sound, .banner, .list])
+        }
     }
     
     //푸시 클릭: 카카오톡 푸시 클릭 -> 카카오톡 푸시 온 채팅방으로 바로 이동
-    //유저가 푸시를 클릭했을 때만 수신 확인 가능
+    //유저가 푸시를 클릭했을 때만 실행되는 메서드
+    
+    //특정 푸시를 클릭하면 특정 상세 화면으로 화면 전환
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         print("사용자가 푸시를 클릭했습니다.")
         
@@ -100,6 +102,30 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             print("NOTHING")
         }
         
+        guard let viewController = (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.window?.rootViewController?.topViewController else { return }
+        
+        print(viewController)
+        
+        // viewController가 VC 이면 SettingVC로 화면 전환을 해주세요!
+        if viewController is ViewController {
+            viewController.navigationController?.pushViewController(SettingViewController(), animated: true)
+        }
+        
+        // viewController가 ProfileViewController 이면, SettingVC로 이동해주세요!
+        if viewController is ProfileViewController {
+            viewController.dismiss(animated: true) {
+                guard let viewController = (UIApplication.shared.connectedScenes.first?.delegate as? SceneDelegate)?.window?.rootViewController?.topViewController else { return }
+                
+                if viewController is ViewController {
+                    viewController.navigationController?.pushViewController(SettingViewController(), animated: true)
+                }
+            }
+        }
+        
+        // viewController가 SettingVC 이면, VC로 이동해주세요!
+        if viewController is SettingViewController {
+            viewController.navigationController?.popViewController(animated: true)
+        }
     }
     
 }
