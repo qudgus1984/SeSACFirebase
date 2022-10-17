@@ -18,7 +18,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        aboutRealmMigration()
+        
+        let config = Realm.Configuration(schemaVersion: 3) { migration, oldSchemaVersion in
+            if oldSchemaVersion < 1 { //DetailTodo, List 추가
+                
+            }
+            
+            if oldSchemaVersion < 2 { //EmbeddedObject 추가
+                
+            }
+            
+            if oldSchemaVersion < 3 { //DetailTodoㅇ[ deadline추가
+                
+            }
+        }
+        
+        Realm.Configuration.defaultConfiguration = config
+        
+        
+        
+        
+        
+        
+        
+        //aboutRealmMigration()
         
         UIViewController.swizzleMethod() //왜 인스턴스가 아니라 타입으로 써야하는지
         
@@ -67,6 +90,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     
+    //토큰을 성공적으로 받았을 때 firebase에게 token정보를 보냄!!
     func application(application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
       Messaging.messaging().apnsToken = deviceToken
